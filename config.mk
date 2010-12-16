@@ -5,7 +5,7 @@ BIN     := $(NAME)
 OBJECTS := xkeybind.o util.o $(NAME).o
 
 GTK_CFLAGS  := gtkmm-2.4 gtkmm-utils
-GTK_LDFLAGS := $(GTK_CFLAGS) keybinder
+GTK_LDFLAGS := $(GTK_CFLAGS)
 
 CXXFLAGS += $(foreach p,$(GTK_CFLAGS),$(shell pkg-config --cflags $(p)))
 
