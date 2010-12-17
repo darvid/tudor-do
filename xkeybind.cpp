@@ -7,7 +7,6 @@
     :copyright: (c) 2010 David 'dav' Gidwani
     :license: New BSD License. See LICENSE for details.
 */
-#include <iostream>
 #include "util.h"
 #include "xkeybind.h"
 
@@ -44,9 +43,18 @@ void XKeyBind::bind_key(const std::string& keystring)
     size_t pos;
     if (std::string::npos != (pos = keystring.rfind('+')))
     {
-        XGrabKey(this->dpy,
-                 XKeyBind::get_keycode(keystring.substr(pos + 1, -1)),
-                 XKeyBind::get_modifiermask(keystring.substr(0, pos)),
+        unsigned int keycode, modifiers, numlock_mask;
+        numlock_mask = this->get_numlock_mask();
+        keycode = XKeyBind::get_keycode(keystring.substr(pos + 1, -1));
+        modifiers = XKeyBind::get_modifiermask(keystring.substr(0, pos));
+
+        XGrabKey(this->dpy, keycode, modifiers, this->root, True,
+                 GrabModeAsync, GrabModeAsync);
+        XGrabKey(this->dpy, keycode, modifiers|LockMask, this->root, True,
+                 GrabModeAsync, GrabModeAsync);
+        XGrabKey(this->dpy, keycode, modifiers|numlock_mask,
+                 this->root, True, GrabModeAsync, GrabModeAsync);
+        XGrabKey(this->dpy, keycode, modifiers|numlock_mask|LockMask,
                  this->root, True, GrabModeAsync, GrabModeAsync);
     }
 }
@@ -58,7 +66,7 @@ Display* XKeyBind::get_active_display()
     return dpy;
 }
 
-int XKeyBind::get_keycode(const std::string& character)
+unsigned int XKeyBind::get_keycode(const std::string& character)
 {
     return XKeysymToKeycode(XKeyBind::get_active_display(),
         XStringToKeysym(character.c_str()));
@@ -81,6 +89,24 @@ unsigned int XKeyBind::get_modifiermask(const std::string& modifier_str)
         else if (modifiers[i] == "super")
             mask = mask | Mod4Mask;
     }
+    return mask;
+}
+
+// Borrowed from dwm: <http://hg.suckless.org/dwm/file/tip/dwm.c#l1848>
+unsigned int XKeyBind::get_numlock_mask()
+{
+    unsigned int i, j, mask(0), numlock;
+    Display* dpy;
+    XModifierKeymap* modmap;
+
+    dpy = XKeyBind::get_active_display();
+    modmap = XGetModifierMapping(dpy);
+    numlock = XKeysymToKeycode(dpy, XK_Num_Lock);
+    for (i = 0; i < 8; i++)
+        for (j = 0; j < modmap->max_keypermod; j++)
+            if (modmap->modifiermap[i*modmap->max_keypermod+j] == numlock)
+                mask = (1 << i);
+    XFreeModifiermap(modmap);
     return mask;
 }
 
