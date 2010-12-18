@@ -7,6 +7,7 @@
     :copyright: (c) 2010 David 'dav' Gidwani
     :license: New BSD License. See LICENSE for details.
 */
+#include <iostream>
 #include "util.h"
 #include "xkeybind.h"
 
@@ -45,7 +46,7 @@ void XKeyBind::bind_key(const std::string& keystring)
     {
         unsigned int keycode, modifiers, numlock_mask;
         numlock_mask = this->get_numlock_mask();
-        keycode = XKeyBind::get_keycode(keystring.substr(pos + 1, -1));
+        keycode = XKeyBind::get_keycode(upper(keystring.substr(pos + 1, -1)));
         modifiers = XKeyBind::get_modifiermask(keystring.substr(0, pos));
 
         XGrabKey(this->dpy, keycode, modifiers, this->root, True,
@@ -77,16 +78,16 @@ unsigned int XKeyBind::get_modifiermask(const std::string& modifier_str)
     if (modifier_str.empty()) return AnyModifier;
     unsigned int mask = 0;
     std::vector<std::string> modifiers;
-    modifiers = split(lower(modifier_str), '+');
+    modifiers = split(upper(modifier_str), '+');
     for (int i = 0; i < modifiers.size(); i++)
     {
-        if (modifiers[i] == "ctrl")
+        if (modifiers[i] == "CTRL")
             mask = mask | ControlMask;
-        else if (modifiers[i] == "alt")
+        else if (modifiers[i] == "ALT")
             mask = mask | Mod1Mask;
-        else if (modifiers[i] == "shift")
+        else if (modifiers[i] == "SHIFT")
             mask = mask | ShiftMask;
-        else if (modifiers[i] == "super")
+        else if (modifiers[i] == "SUPER")
             mask = mask | Mod4Mask;
     }
     return mask;

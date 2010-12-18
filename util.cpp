@@ -54,11 +54,11 @@ void fatal_error(const std::string& msg)
     exit(1);
 }
 
-std::string lower(const std::string& str)
+std::string upper(const std::string& str)
 {
     std::string newstr(str);
     std::transform(newstr.begin(), newstr.end(), newstr.begin(),
-        ::tolower);
+        ::toupper);
     return newstr;
 }
 

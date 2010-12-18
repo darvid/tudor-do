@@ -24,9 +24,6 @@ Do::Do() : m_Xkb(), m_Entry()
     this->bind_signals();
     this->setup_completion();
 
-    Glib::ustring hotkey = Glib::getenv("TUDOR_DO_HOTKEY");
-    this->bind_key(hotkey.empty() ? "Alt+F2" : hotkey);
-
     this->add(this->m_Entry);
     this->show_all_children();
     this->set_position(Gtk::WIN_POS_CENTER);
@@ -294,6 +291,8 @@ int main(int argc, char* argv[])
     Gtk::Main    kit(argc, argv);
     Do           main_window;
 
+    Glib::ustring hotkey = Glib::getenv("TUDOR_DO_HOTKEY");
+    main_window.bind_key(hotkey.empty() ? "Alt+F2" : hotkey);
     main_window.start_xevent_loop();
 
     kit.run();

@@ -9,7 +9,7 @@ void find_and_replace(std::string& str,
                       const std::string& substr,
                       const std::string& repl);
 int find_last_space_pos(std::string str);
-std::string lower(const std::string& str);
+std::string upper(const std::string& str);
 bool exists(const std::string& path);
 void warning(const std::string& msg);
 void fatal_error(const std::string& msg);
