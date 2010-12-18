@@ -1,0 +1,11 @@
+# vim:set ts=4 sw=2 ft=sh et:
+post_install () {
+	echo "==> Default behavior binds to Alt+F2. Use the contents of the"
+	echo "==> environment variable TUDOR_DO_HOTKEY to modify this behavior."
+	echo "==> make it permanent by adding export TUDOR_DO_HOTKEY='Super+P' to"
+	echo "==> ~/.bash_profile or ~/.zprofile"
+}
+
+post_upgrade () {
+	post_install
+}
