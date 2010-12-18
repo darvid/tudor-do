@@ -27,6 +27,10 @@ Do::Do() : m_Xkb(), m_Entry()
     this->add(this->m_Entry);
     this->show_all_children();
     this->set_position(Gtk::WIN_POS_CENTER);
+	Glib::ustring decorated = Glib::getenv("TUDOR_DO_DECORATED");
+	this->set_decorated(decorated == "False" or decorated ==  "false" or decorated == "0"
+		? false : true);
+
 }
 
 Do::~Do()
