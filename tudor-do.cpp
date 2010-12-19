@@ -27,14 +27,6 @@ Do::Do() : m_Xkb(), m_Entry()
     this->add(this->m_Entry);
     this->show_all_children();
     this->set_position(Gtk::WIN_POS_CENTER);
-
-	Glib::ustring hotkey = Glib::getenv("TUDOR_DO_HOTKEY");
-    main_window.bind_key(hotkey.empty() ? "Alt+F2" : hotkey);
-
-	Glib::ustring decorated = Glib::getenv("TUDOR_DO_DECORATED");
-	this->set_decorated(decorated == "False" or decorated ==  "false" or decorated == "0"
-		? false : true);
-
 }
 
 Do::~Do()
@@ -296,12 +288,41 @@ bool Do::on_key_pressed_event(GdkEventKey* event)
 
 int main(int argc, char* argv[])
 {
-    Gtk::Main    kit(argc, argv);
-    Do           main_window;
+    Glib::OptionGroup options("tudor-do", "tudor-do options");
+    Glib::OptionEntry entry;
 
+    bool version(false);
+    entry.set_long_name("version");
+    entry.set_description("print version information and exit");
+    options.add_entry(entry, version);
+
+    Glib::ustring hotkey = "Alt+F2";
+    entry.set_long_name("hotkey");
+    entry.set_short_name('h');
+    entry.set_description("set hotkey string");
+    options.add_entry(entry, hotkey);
+
+    bool undecorated(false);
+    entry.set_long_name("undecorated");
+    entry.set_short_name('u');
+    entry.set_description("undecorate window");
+    options.add_entry(entry, undecorated);
+
+    Glib::OptionContext context("");
+    context.add_group(options);
+
+    Gtk::Main kit(argc, argv, context);
+    if (version)
+    {
+        std::cout << "tudor-do 0.1.1" << std::endl;
+        return 0;
+    }
+
+    Do main_window;
+    main_window.bind_key(hotkey);
+    main_window.set_decorated(!undecorated);
 
     main_window.start_xevent_loop();
-
     kit.run();
     return 0;
 }

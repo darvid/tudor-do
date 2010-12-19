@@ -7,7 +7,6 @@
     :copyright: (c) 2010 David 'dav' Gidwani
     :license: New BSD License. See LICENSE for details.
 */
-#include <iostream>
 #include "util.h"
 #include "xkeybind.h"
 
