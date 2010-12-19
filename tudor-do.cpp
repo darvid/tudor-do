@@ -291,11 +291,6 @@ int main(int argc, char* argv[])
     Glib::OptionGroup options("tudor-do", "tudor-do options");
     Glib::OptionEntry entry;
 
-    bool version(false);
-    entry.set_long_name("version");
-    entry.set_description("print version information and exit");
-    options.add_entry(entry, version);
-
     Glib::ustring hotkey = "Alt+F2";
     entry.set_long_name("hotkey");
     entry.set_short_name('h');
@@ -307,6 +302,17 @@ int main(int argc, char* argv[])
     entry.set_short_name('u');
     entry.set_description("undecorate window");
     options.add_entry(entry, undecorated);
+
+    Glib::ustring title = " ";
+    entry.set_long_name("title");
+    entry.set_short_name('t');
+    entry.set_description("set the title of the window");
+    options.add_entry(entry, title);
+
+    bool version(false);
+    entry.set_long_name("version");
+    entry.set_description("print version information and exit");
+    options.add_entry(entry, version);
 
     Glib::OptionContext context("");
     context.add_group(options);
@@ -321,6 +327,7 @@ int main(int argc, char* argv[])
     Do main_window;
     main_window.bind_key(hotkey);
     main_window.set_decorated(!undecorated);
+    main_window.set_title(title);
 
     main_window.start_xevent_loop();
     kit.run();
