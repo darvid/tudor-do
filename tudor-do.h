@@ -17,22 +17,26 @@
 #include <gtkmm.h>
 #include "xkeybind.h"
 
+class PathMonitor;
+
 class Do : public Gtk::Window
 {
     public:
+        typedef std::map<std::string, std::vector<std::string> > t_path_map;
+
         Do();
         virtual ~Do();
         void bind_key(const std::string& keystring);
         void start_xevent_loop();
     protected:
         Glib::RefPtr<Gtk::ListStore>    m_Liststore;
-
-        XKeyBind                        m_Xkb;
         Gtk::Entry                      m_Entry;
+        PathMonitor*                    m_Monitor;
+        XKeyBind                        m_Xkb;
 
-        typedef std::map<std::string, std::vector<std::string> > t_path_map;
+        std::vector<std::string>        m_history;
         typedef t_path_map::const_iterator t_path_iter;
-        t_path_map path;
+        t_path_map                      m_path;
 
         class PathModelColumns : public Gtk::TreeModel::ColumnRecord
         {
@@ -51,6 +55,7 @@ class Do : public Gtk::Window
         void liststore_append(const std::string& dirname,
                               const std::string& filename);
         void setup_completion();
+
         void update_path();
 
         bool on_completion_match(const Glib::ustring& key,

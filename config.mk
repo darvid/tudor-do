@@ -2,7 +2,7 @@ NAME := tudor-do
 CXX  := g++
 
 BIN     := $(NAME)
-OBJECTS := xkeybind.o util.o $(NAME).o
+OBJECTS := monitor.o inotify-cxx.o xkeybind.o util.o $(NAME).o
 
 GTK_CFLAGS  := gtkmm-2.4
 GTK_LDFLAGS := $(GTK_CFLAGS)

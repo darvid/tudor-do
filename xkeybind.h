@@ -7,8 +7,8 @@
     :copyright: (c) 2010 David 'dav' Gidwani
     :license: New BSD License. See LICENSE for details.
 */
-#ifndef TUDOR_XKEYBIND_H
-#define TUDOR_XKEYBIND_H
+#ifndef TUDOR_DO_XKEYBIND_H
+#define TUDOR_DO_XKEYBIND_H
 #include <glibmm.h>
 #include <gtkmm.h>
 #include <X11/Xlib.h>
@@ -28,13 +28,13 @@ class XKeyBind {
         static unsigned int get_modifiermask(const std::string& modifier_str);
         static unsigned int get_numlock_mask();
     protected:
-        Glib::Thread* thread;
-        Glib::Mutex   mutex;
-        Display*      dpy;
-        Window        root;
-        bool          _stop;
+        Glib::Thread* m_thread;
+        Glib::Mutex   m_mutex;
+        Display*      m_dpy;
+        Window        m_root;
+        bool          m_stop;
 
         void run();
 };
 
-#endif /* TUDOR_XKEYBIND_H */
+#endif /* TUDOR_DO_XKEYBIND_H */

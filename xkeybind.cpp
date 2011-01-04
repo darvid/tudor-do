@@ -10,32 +10,32 @@
 #include "util.h"
 #include "xkeybind.h"
 
-XKeyBind::XKeyBind() : thread(0), _stop(false)
+XKeyBind::XKeyBind() : m_thread(0), m_stop(false)
 {
-    this->dpy = XKeyBind::get_active_display();
-    this->root = DefaultRootWindow(this->dpy);
+    this->m_dpy  = XKeyBind::get_active_display();
+    this->m_root = DefaultRootWindow(this->m_dpy);
 }
 
 XKeyBind::~XKeyBind()
 {
     {
-        Glib::Mutex::Lock lock(this->mutex);
-        this->_stop = true;
+        Glib::Mutex::Lock lock(this->m_mutex);
+        this->m_stop = true;
     }
-    if (this->thread)
-        this->thread->join();
+    if (this->m_thread)
+        this->m_thread->join();
 }
 
 void XKeyBind::start()
 {
-    this->thread = Glib::Thread::create(sigc::mem_fun(*this,
+    this->m_thread = Glib::Thread::create(sigc::mem_fun(*this,
         &XKeyBind::run), true);
 }
 
 void XKeyBind::stop()
 {
-    Glib::Mutex::Lock lock(this->mutex);
-    this->_stop = true;
+    Glib::Mutex::Lock lock(this->m_mutex);
+    this->m_stop = true;
 }
 
 void XKeyBind::bind_key(const std::string& keystring)
@@ -48,22 +48,22 @@ void XKeyBind::bind_key(const std::string& keystring)
         keycode = XKeyBind::get_keycode(upper(keystring.substr(pos + 1, -1)));
         modifiers = XKeyBind::get_modifiermask(keystring.substr(0, pos));
 
-        XGrabKey(this->dpy, keycode, modifiers, this->root, True,
+        XGrabKey(this->m_dpy, keycode, modifiers, this->m_root, True,
                  GrabModeAsync, GrabModeAsync);
-        XGrabKey(this->dpy, keycode, modifiers|LockMask, this->root, True,
+        XGrabKey(this->m_dpy, keycode, modifiers|LockMask, this->m_root, True,
                  GrabModeAsync, GrabModeAsync);
-        XGrabKey(this->dpy, keycode, modifiers|numlock_mask,
-                 this->root, True, GrabModeAsync, GrabModeAsync);
-        XGrabKey(this->dpy, keycode, modifiers|numlock_mask|LockMask,
-                 this->root, True, GrabModeAsync, GrabModeAsync);
+        XGrabKey(this->m_dpy, keycode, modifiers|numlock_mask,
+                 this->m_root, True, GrabModeAsync, GrabModeAsync);
+        XGrabKey(this->m_dpy, keycode, modifiers|numlock_mask|LockMask,
+                 this->m_root, True, GrabModeAsync, GrabModeAsync);
     }
 }
 
 Display* XKeyBind::get_active_display()
 {
-    Display* dpy = XOpenDisplay(NULL);
-    if (!dpy) fatal_error("unable to open display");
-    return dpy;
+    Display* m_dpy = XOpenDisplay(NULL);
+    if (!m_dpy) fatal_error("unable to open display");
+    return m_dpy;
 }
 
 unsigned int XKeyBind::get_keycode(const std::string& character)
@@ -82,11 +82,11 @@ unsigned int XKeyBind::get_modifiermask(const std::string& modifier_str)
     {
         if (modifiers[i] == "CTRL")
             mask = mask | ControlMask;
-        else if (modifiers[i] == "ALT")
+        else if (modifiers[i] == "ALT" || modifiers[i] == "MOD1")
             mask = mask | Mod1Mask;
         else if (modifiers[i] == "SHIFT")
             mask = mask | ShiftMask;
-        else if (modifiers[i] == "SUPER")
+        else if (modifiers[i] == "SUPER" || modifiers[i] == "MOD4")
             mask = mask | Mod4Mask;
     }
     return mask;
@@ -96,12 +96,12 @@ unsigned int XKeyBind::get_modifiermask(const std::string& modifier_str)
 unsigned int XKeyBind::get_numlock_mask()
 {
     unsigned int i, j, mask(0), numlock;
-    Display* dpy;
+    Display* m_dpy;
     XModifierKeymap* modmap;
 
-    dpy = XKeyBind::get_active_display();
-    modmap = XGetModifierMapping(dpy);
-    numlock = XKeysymToKeycode(dpy, XK_Num_Lock);
+    m_dpy = XKeyBind::get_active_display();
+    modmap = XGetModifierMapping(m_dpy);
+    numlock = XKeysymToKeycode(m_dpy, XK_Num_Lock);
     for (i = 0; i < 8; i++)
         for (j = 0; j < modmap->max_keypermod; j++)
             if (modmap->modifiermap[i*modmap->max_keypermod+j] == numlock)
@@ -115,11 +115,11 @@ void XKeyBind::run()
     XEvent event;
     while (true) {
         {
-            Glib::Mutex::Lock lock(this->mutex);
-            if (this->_stop)
+            Glib::Mutex::Lock lock(this->m_mutex);
+            if (this->m_stop)
                 break;
         }
-        XNextEvent(this->dpy, &event);
+        XNextEvent(this->m_dpy, &event);
         if (event.type == KeyPress)
             this->sig_done();
     }

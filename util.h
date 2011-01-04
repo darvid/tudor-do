@@ -1,3 +1,12 @@
+/*
+    util
+    ~~~~
+
+    Assorted convenience routines.
+
+    :copyright: (c) 2010 David 'dav' Gidwani
+    :license: New BSD License. See LICENSE for details.
+*/
 #ifndef TUDOR_DO_UTIL_H
 #define TUDOR_DO_UTIL_H
 #include <cstdlib>
@@ -16,4 +25,3 @@ void fatal_error(const std::string& msg);
 std::vector<std::string> split(const std::string& str, char delim);
 
 #endif /* TUDOR_DO_UTIL_H */
-

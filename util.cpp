@@ -1,5 +1,14 @@
+/*
+    util
+    ~~~~
+
+    Assorted convenience routines.
+
+    :copyright: (c) 2010 David 'dav' Gidwani
+    :license: New BSD License. See LICENSE for details.
+*/
 #include <algorithm>
-#include <cstdio>
+#include <iostream>
 #include <istream>
 #include <sstream>
 #include <string>
@@ -45,12 +54,12 @@ bool exists(const std::string& path)
 
 void warning(const std::string& msg)
 {
-    fprintf(stderr, "warning: %s\n", msg.c_str());
+    std::cerr << "warning: " << msg << std::endl;
 }
 
 void fatal_error(const std::string& msg)
 {
-    fprintf(stderr, "%s\n", msg.c_str());
+    std::cerr << "warning: " << msg << std::endl;
     exit(1);
 }
 
@@ -71,4 +80,3 @@ std::vector<std::string> split(const std::string& str, const char delim)
         elems.push_back(item);
     return elems;
 }
-

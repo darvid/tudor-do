@@ -10,19 +10,24 @@
     :license: New BSD License. See LICENSE for details.
 */
 #include <cstdio>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <glibmm.h>
 #include <glibmm/fileutils.h>
 #include <unistd.h>
 #include "tudor-do.h"
+#include "monitor.h"
 #include "util.h"
 
 Do::Do() : m_Xkb(), m_Entry()
 {
+    this->m_Monitor = new PathMonitor(this->m_path);
     this->update_path();
     this->bind_signals();
     this->setup_completion();
+
+    this->m_Monitor->start();
 
     this->add(this->m_Entry);
     this->show_all_children();
@@ -90,14 +95,10 @@ void Do::update_path()
     std::string path = Glib::getenv("PATH");
     if ((dirs = split(path, ':')).empty())
         fatal_error("missing PATH");
-    for (int i=0; i<dirs.size(); i++)
+    for (int i=0; i < dirs.size(); i++)
     {
-        std::vector<std::string> listing;
-        if (!Glib::file_test(dirs[i], Glib::FILE_TEST_IS_DIR)) return;
-        std::auto_ptr<Glib::Dir> dir(new Glib::Dir(dirs[i]));
-        for (Glib::Dir::iterator p = dir->begin(); p != dir->end(); p++)
-            listing.push_back(*p);
-        this->path[dirs[i]] = listing;
+        this->m_Monitor->update_directory_listing(dirs[i]);
+        this->m_Monitor->monitor_directory(dirs[i]);
     }
 }
 
@@ -199,8 +200,8 @@ void Do::on_entry_changed_event()
             }
         }
     }
-    Do::t_path_iter map_iter = this->path.begin();
-    while (map_iter != this->path.end())
+    Do::t_path_iter map_iter = this->m_path.begin();
+    while (map_iter != this->m_path.end())
     {
         for (int i=0; i<(map_iter->second).size(); i++)
         {
@@ -294,33 +295,34 @@ int main(int argc, char* argv[])
     Glib::ustring hotkey = "Alt+F2";
     entry.set_long_name("hotkey");
     entry.set_short_name('h');
-    entry.set_description("set hotkey string");
+    entry.set_description("Set hotkey string");
     options.add_entry(entry, hotkey);
 
     bool undecorated(false);
     entry.set_long_name("undecorated");
     entry.set_short_name('u');
-    entry.set_description("undecorate window");
+    entry.set_description("Undecorate window");
     options.add_entry(entry, undecorated);
 
     Glib::ustring title = " ";
     entry.set_long_name("title");
     entry.set_short_name('t');
-    entry.set_description("set the title of the window");
+    entry.set_description("Set the title of the window");
     options.add_entry(entry, title);
 
     bool version(false);
     entry.set_long_name("version");
-    entry.set_description("print version information and exit");
+    entry.set_description("Print version information and exit");
     options.add_entry(entry, version);
 
     Glib::OptionContext context("");
     context.add_group(options);
 
+    if(!Glib::thread_supported()) Glib::thread_init();
     Gtk::Main kit(argc, argv, context);
     if (version)
     {
-        std::cout << "tudor-do 0.1.1" << std::endl;
+        std::cout << "tudor-do 0.1.2" << std::endl;
         return 0;
     }
 
@@ -330,7 +332,7 @@ int main(int argc, char* argv[])
     main_window.set_title(title);
 
     main_window.start_xevent_loop();
+
     kit.run();
     return 0;
 }
-
