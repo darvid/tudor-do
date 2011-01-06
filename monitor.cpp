@@ -68,7 +68,6 @@ void PathMonitor::stop()
 void PathMonitor::run()
 {
     Inotify notify;
-    notify.SetNonBlock(true);
     for (int i = 0; i < this->m_watchlist.size(); i++)
         try
         {
