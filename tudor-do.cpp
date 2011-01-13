@@ -33,6 +33,7 @@ Do::Do() : m_Xkb(), m_Entry()
     this->show_all_children();
     this->set_icon_name("applications-system");
     this->set_position(Gtk::WIN_POS_CENTER);
+    this->set_resizable(false);
 }
 
 Do::~Do()
