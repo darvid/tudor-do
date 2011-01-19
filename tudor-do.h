@@ -62,6 +62,7 @@ class Do : public Gtk::Window
                                  const Gtk::TreeModel::const_iterator& iter);
         bool on_completion_match_selected(const Gtk::TreeModel::iterator& iter);
         bool on_delete_event(GdkEventAny* event);
+        bool on_focus_out_event(GdkEventFocus* event);
 
         void on_entry_activate();
         void on_entry_changed_event();

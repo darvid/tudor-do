@@ -46,6 +46,8 @@ void Do::bind_signals()
         &Do::on_delete_event));
     this->signal_key_press_event().connect(sigc::mem_fun(*this,
         &Do::on_key_pressed_event), false);
+    this->signal_focus_out_event().connect(sigc::mem_fun(*this,
+        &Do::on_focus_out_event));
     this->m_Entry.signal_activate().connect(sigc::mem_fun(*this,
         &Do::on_entry_activate));
     this->m_Entry.signal_changed().connect(sigc::mem_fun(*this,
@@ -160,6 +162,12 @@ bool Do::on_completion_match_selected(const Gtk::TreeModel::iterator& iter)
 }
 
 bool Do::on_delete_event(GdkEventAny*)
+{
+    this->hide();
+    return false;
+}
+
+bool Do::on_focus_out_event(GdkEventFocus*)
 {
     this->hide();
     return false;
