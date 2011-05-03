@@ -13,6 +13,7 @@
 #define TUDOR_DO_H
 #include <map>
 #include <vector>
+#include <set>
 #include <glibmm.h>
 #include <gtkmm.h>
 #include "xkeybind.h"
@@ -23,6 +24,7 @@ class Do : public Gtk::Window
 {
     public:
         typedef std::map<std::string, std::vector<std::string> > t_path_map;
+        typedef std::set<std::string> t_history;
 
         Do();
         virtual ~Do();
@@ -34,8 +36,8 @@ class Do : public Gtk::Window
         PathMonitor*                    m_Monitor;
         XKeyBind                        m_Xkb;
 
-        std::vector<std::string>        m_history;
-        typedef t_path_map::const_iterator t_path_iter;
+        Gtk::TreeRow                    m_selected_row;
+        std::set<std::string>           m_history;
         t_path_map                      m_path;
 
         class PathModelColumns : public Gtk::TreeModel::ColumnRecord
@@ -52,22 +54,22 @@ class Do : public Gtk::Window
         PathModelColumns columns;
 
         void bind_signals();
-        void liststore_append(const std::string& dirname,
-                              const std::string& filename);
+        void execute(const std::string& command);
+        void liststore_append(const Glib::ustring& dirname,
+                              const Glib::ustring& filename);
         void setup_completion();
-
-        void update_path();
 
         bool on_completion_match(const Glib::ustring& key,
                                  const Gtk::TreeModel::const_iterator& iter);
         bool on_completion_match_selected(const Gtk::TreeModel::iterator& iter);
         bool on_delete_event(GdkEventAny* event);
         bool on_focus_out_event(GdkEventFocus* event);
-
         void on_entry_activate();
         void on_entry_changed_event();
         bool on_entry_key_pressed_event(GdkEventKey* event);
         bool on_key_pressed_event(GdkEventKey* event);
+
+        void update_path();
 };
 
 #endif /* TUDOR_DO_H */

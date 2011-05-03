@@ -11,6 +11,7 @@
 */
 #include <cstdio>
 #include <fstream>
+#include <initializer_list>
 #include <iostream>
 #include <memory>
 #include <glibmm.h>
@@ -40,6 +41,11 @@ Do::~Do()
 {
 }
 
+void Do::bind_key(const std::string& keystring)
+{
+    this->m_Xkb.bind_key(keystring);
+}
+
 void Do::bind_signals()
 {
     this->signal_delete_event().connect(sigc::mem_fun(*this,
@@ -54,6 +60,30 @@ void Do::bind_signals()
         &Do::on_entry_changed_event));
     this->m_Entry.signal_key_press_event().connect(sigc::mem_fun(*this,
         &Do::on_entry_key_pressed_event), false);
+}
+
+void Do::execute(const std::string& command)
+{
+    try
+    {
+        Glib::spawn_command_line_async(command);
+        if (command.find(" ") != std::string::npos)
+            this->m_history.insert(command);
+    } catch(Glib::Error& err) {
+        Gtk::MessageDialog dialog(*this, err.what(), false, Gtk::MESSAGE_ERROR,
+                                  Gtk::BUTTONS_OK);
+        dialog.run();
+    }
+    this->m_Entry.set_text("");
+    this->hide();
+}
+
+void Do::liststore_append(const Glib::ustring& dirname,
+                          const Glib::ustring& filename)
+{
+    Gtk::TreeModel::Row row = *(this->m_Liststore->append());
+    row[this->columns.m_col_dir] = dirname;
+    row[this->columns.m_col_file] = filename;
 }
 
 void Do::setup_completion()
@@ -74,36 +104,10 @@ void Do::setup_completion()
         &Do::on_completion_match_selected), false);
 }
 
-void Do::bind_key(const std::string& keystring)
-{
-    this->m_Xkb.bind_key(keystring);
-}
-
-void Do::liststore_append(const std::string& dirname,
-                          const std::string& filename)
-{
-    Gtk::TreeModel::Row row = *(this->m_Liststore->append());
-    row[this->columns.m_col_dir]  = dirname;
-    row[this->columns.m_col_file] = filename;
-}
-
 void Do::start_xevent_loop()
 {
     this->m_Xkb.start();
     this->m_Xkb.sig_done.connect(sigc::mem_fun(*this, &Gtk::Window::show));
-}
-
-void Do::update_path()
-{
-    std::vector<std::string> dirs;
-    std::string path = Glib::getenv("PATH");
-    if ((dirs = split(path, ':')).empty())
-        fatal_error("missing PATH");
-    for (int i=0; i < dirs.size(); i++)
-    {
-        this->m_Monitor->update_directory_listing(dirs[i]);
-        this->m_Monitor->monitor_directory(dirs[i]);
-    }
 }
 
 void Do::on_entry_activate()
@@ -113,14 +117,12 @@ void Do::on_entry_activate()
     {
         if (Glib::file_test(text, Glib::FILE_TEST_IS_REGULAR)
             && 0 == access(text.c_str(), X_OK))
-            popen(text.c_str(), "r");
+            this->execute(text);
         else
-            popen(("xdg-open " + text).c_str(), "r");
+            this->execute("xdg-open " + text);
     }
     else
-        popen(text.c_str(), "r");
-    this->m_Entry.set_text("");
-    this->hide();
+        this->execute(text);
 }
 
 bool Do::on_completion_match(const Glib::ustring& key,
@@ -129,12 +131,13 @@ bool Do::on_completion_match(const Glib::ustring& key,
     if (iter)
     {
         Gtk::TreeModel::Row row = *iter;
+        this->m_selected_row = *iter;
         Glib::ustring filename  = row[this->columns.m_col_file];
         filename = filename.lowercase();
 
         int space_pos;
         Glib::ustring match_string = key;
-        if (std::string::npos != (space_pos = find_last_space_pos(key)))
+        if ((space_pos = find_last_space_pos(key)) != std::string::npos)
             match_string = key.substr(++space_pos, -1);
         if ((!match_string.empty())
             && (match_string.length() > 2)
@@ -150,7 +153,7 @@ bool Do::on_completion_match_selected(const Gtk::TreeModel::iterator& iter)
     Glib::ustring text = this->m_Entry.get_text();
 
     int space_pos;
-    if (std::string::npos != (space_pos = find_last_space_pos(text)))
+    if ((space_pos = find_last_space_pos(text)) != std::string::npos)
     {
         text.replace(++space_pos, text.length(),
                      row[this->columns.m_col_file]);
@@ -210,18 +213,21 @@ void Do::on_entry_changed_event()
             }
         }
     }
-    Do::t_path_iter map_iter = this->m_path.begin();
-    while (map_iter != this->m_path.end())
-    {
-        for (int i=0; i<(map_iter->second).size(); i++)
-        {
-            std::string filename = map_iter->second[i];
-            if ((text.length() <= filename.length())
-                && (filename.compare(0, text.length(), text) == 0))
-                this->liststore_append(map_iter->first, filename);
-        }
-        map_iter++;
-    }
+
+    for (Do::t_history::const_iterator iter = this->m_history.begin();
+         iter != this->m_history.end();
+         ++iter)
+        if ((text.length() <= (*iter).length())
+            && ((*iter).compare(0, text.length(), text) == 0))
+            this->liststore_append("", (*iter));
+
+    for (Do::t_path_map::const_iterator iter = this->m_path.begin();
+         iter != this->m_path.end();
+         ++iter)
+        for (int i=0; i<(iter->second).size(); i++)
+            if ((text.length() <= iter->second[i].length())
+                && (iter->second[i].compare(0, text.length(), text) == 0))
+                this->liststore_append(iter->first, iter->second[i]);
 }
 
 bool Do::on_entry_key_pressed_event(GdkEventKey* event)
@@ -295,6 +301,19 @@ bool Do::on_key_pressed_event(GdkEventKey* event)
     else if (event->keyval == GDK_Tab)
         this->m_Entry.set_text(this->m_Entry.get_text());
     return false;
+}
+
+void Do::update_path()
+{
+    std::vector<std::string> dirs;
+    std::string path = Glib::getenv("PATH");
+    if ((dirs = split(path, ':')).empty())
+        fatal_error("missing PATH");
+    for (int i=0; i < dirs.size(); i++)
+    {
+        this->m_Monitor->update_directory_listing(dirs[i]);
+        this->m_Monitor->monitor_directory(dirs[i]);
+    }
 }
 
 int main(int argc, char* argv[])

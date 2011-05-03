@@ -1,6 +1,6 @@
 # Maintainer: Bryan Bennett<bbenne10ATgmailDOTcom>
 pkgname=tudor-do-hg
-pkgver=13
+pkgver=17
 pkgrel=1
 pkgdesc="A lightweight run dialog that has a minimal feature set and resource footprint."
 arch=('i686' 'x86_64')
