@@ -11,7 +11,6 @@
 */
 #include <cstdio>
 #include <fstream>
-#include <initializer_list>
 #include <iostream>
 #include <memory>
 #include <glibmm.h>
@@ -128,23 +127,19 @@ void Do::on_entry_activate()
 bool Do::on_completion_match(const Glib::ustring& key,
                              const Gtk::TreeModel::const_iterator& iter)
 {
-    if (iter)
-    {
-        Gtk::TreeModel::Row row = *iter;
-        this->m_selected_row = *iter;
-        Glib::ustring filename  = row[this->columns.m_col_file];
-        filename = filename.lowercase();
+    if (!iter) return false;
+    this->m_selected_row = *iter;
+    Glib::ustring filename = this->m_selected_row[this->columns.m_col_file];
+    filename = filename.lowercase();
 
-        int space_pos;
-        Glib::ustring match_string = key;
-        if ((space_pos = find_last_space_pos(key)) != std::string::npos)
-            match_string = key.substr(++space_pos, -1);
-        if ((!match_string.empty())
-            && (match_string.length() > 2)
-            && (filename.substr(0, match_string.size()) == match_string))
-            return true;
-    }
-    return false;
+    int space_pos;
+    Glib::ustring match_string = key;
+    if ((space_pos = find_last_space_pos(key)) != std::string::npos)
+        match_string = key.substr(++space_pos, -1);
+    if ((!match_string.empty())
+        && (match_string.length() > 2)
+        && (filename.substr(0, match_string.size()) == match_string))
+        return true;
 }
 
 bool Do::on_completion_match_selected(const Gtk::TreeModel::iterator& iter)
@@ -191,6 +186,7 @@ void Do::on_entry_changed_event()
 
     if (text.substr(0, 1) == "/")
     {
+        this->m_Entry.set_position(-1);
         std::string dir_name, base_name;
         bool walk;
 
@@ -201,9 +197,9 @@ void Do::on_entry_changed_event()
         if (!Glib::file_test(dir_name, Glib::FILE_TEST_EXISTS)) return;
 
         Glib::Dir dir(dir_name);
-        for (Glib::DirIterator i = dir.begin(); i != dir.end(); i++)
+        for (Glib::DirIterator it = dir.begin(); it != dir.end(); it++)
         {
-            std::string name = *i;
+            std::string name = *it;
             if ((text.substr(text.length() - 1, -1) == "/")
                 || (name.substr(0, base_name.length()) == base_name))
             {
@@ -211,6 +207,18 @@ void Do::on_entry_changed_event()
                 find_and_replace(full_path, " ", "\\ ");
                 this->liststore_append(dir_name, full_path);
             }
+        }
+    }
+    else if (text.substr(0, 1) == "$")
+    {
+        std::vector<std::string> env = Glib::listenv();
+        std::string key = text.substr(1);
+        for (std::vector<std::string>::iterator it = env.begin();
+             it != env.end();
+             it++)
+        {
+            if ((*it).substr(0, key.length()) == key)
+                this->liststore_append("", "$" + (*it));
         }
     }
 
@@ -224,15 +232,25 @@ void Do::on_entry_changed_event()
     for (Do::t_path_map::const_iterator iter = this->m_path.begin();
          iter != this->m_path.end();
          ++iter)
-        for (int i=0; i<(iter->second).size(); i++)
-            if ((text.length() <= iter->second[i].length())
-                && (iter->second[i].compare(0, text.length(), text) == 0))
-                this->liststore_append(iter->first, iter->second[i]);
+        for (int it = 0; it < (iter->second).size(); it++)
+            if ((text.length() <= iter->second[it].length())
+                && (iter->second[it].compare(0, text.length(), text) == 0))
+                this->liststore_append(iter->first, iter->second[it]);
 }
 
 bool Do::on_entry_key_pressed_event(GdkEventKey* event)
 {
-    if (event->keyval == GDK_Tab)
+    if (event->keyval == GDK_slash)
+    {
+        std::string text = this->m_Entry.get_text();
+        int len = text.length() - 1;
+        if (len > 0 && text.substr(len) == "~")
+        {
+            this->m_Entry.set_text(text.substr(0, len) + Glib::getenv("HOME"));
+            this->m_Entry.set_position(-1);
+        }
+    }
+    else if (event->keyval == GDK_Tab)
     {
         Glib::ustring text;
         text = this->m_Entry.get_text();
@@ -240,7 +258,7 @@ bool Do::on_entry_key_pressed_event(GdkEventKey* event)
             && (text.substr(text.length() - 1, 1) == "~")
             && (this->m_Entry.get_position() == text.length()))
         {
-            std::string home = Glib::getenv("HOME");
+            std::string home = Glib::getenv("HOME") + "/";
             text.replace(text.length() - 1, home.length(), home);
             this->m_Entry.set_text(text);
             this->m_Entry.set_position(-1);
@@ -256,29 +274,13 @@ bool Do::on_entry_key_pressed_event(GdkEventKey* event)
             return true;
         }
 
-        std::string buf = text;
-        std::string::size_type pos;
-
-        for (pos = buf.find_last_of(' ');
-             pos != std::string::npos;)
-        {
-            if (buf.substr(pos - 1, 1) == "\\")
-            {
-                --pos;
-                buf = buf.substr(0, pos);
-                pos = buf.find_last_of(' ');
-            }
-            break;
-        }
-
         int sel_start, sel_end;
         this->m_Entry.get_selection_bounds(sel_start, sel_end);
 
+        std::string::size_type pos = find_last_space_pos(text);
         if ((std::string::npos != pos) && (sel_start == sel_end))
         {
-            int cursor_pos;
-            cursor_pos = this->m_Entry.get_position();
-
+            int cursor_pos = this->m_Entry.get_position();
             text.replace(++pos, text.length(),
                          row[this->columns.m_col_file]);
             this->m_Entry.set_text(text);
